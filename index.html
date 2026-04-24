@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iOS 風格計算機</title>
+  <style>
+    /* 重置基本樣式 */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: white;
+    }
+
+    .calculator {
+      width: 350px;
+      padding: 20px;
+    }
+
+    /* 螢幕顯示區 */
+    .display {
+      font-size: 80px;
+      font-weight: 300;
+      text-align: right;
+      padding-right: 10px;
+      margin-bottom: 20px;
+      height: 100px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-end;
+      overflow: hidden;
+    }
+
+    /* 按鈕網格佈局 */
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    /* 按鈕共用樣式 */
+    button {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      border: none;
+      font-size: 32px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: filter 0.2s;
+    }
+
+    button:active {
+      filter: brightness(1.5);
+    }
+
+    /* 數字鍵與小數點 (深灰) */
+    .btn-dark {
+      background-color: #333333;
+      color: white;
+    }
+
+    /* 功能鍵 (淺灰) */
+    .btn-light {
+      background-color: #a5a5a5;
+      color: black;
+      font-size: 28px;
+    }
+
+    /* 運算鍵 (橘色) */
+    .btn-orange {
+      background-color: #ff9f0a;
+      color: white;
+      font-size: 40px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="calculator">
+    <div class="display" id="display">0</div>
+    <div class="buttons">
+      <button class="btn-light" onclick="handleBackspace()">⌫</button>
+      <button class="btn-light" onclick="handleAction('AC')">AC</button>
+      <button class="btn-light" onclick="handleAction('%')">%</button>
+      <button class="btn-orange" onclick="setOperator('÷')">÷</button>
+
+      <button class="btn-dark" onclick="appendNumber('7')">7</button>
+      <button class="btn-dark" onclick="appendNumber('8')">8</button>
+      <button class="btn-dark" onclick="appendNumber('9')">9</button>
+      <button class="btn-orange" onclick="setOperator('×')">×</button>
+
+      <button class="btn-dark" onclick="appendNumber('4')">4</button>
+      <button class="btn-dark" onclick="appendNumber('5')">5</button>
+      <button class="btn-dark" onclick="appendNumber('6')">6</button>
+      <button class="btn-orange" onclick="setOperator('−')">−</button>
+
+      <button class="btn-dark" onclick="appendNumber('1')">1</button>
+      <button class="btn-dark" onclick="appendNumber('2')">2</button>
+      <button class="btn-dark" onclick="appendNumber('3')">3</button>
+      <button class="btn-orange" onclick="setOperator('+')">+</button>
+
+      <button class="btn-dark" onclick="handleAction('+/-')" style="font-size: 24px;">+/-</button>
+      <button class="btn-dark" onclick="appendNumber('0')">0</button>
+      <button class="btn-dark" onclick="appendNumber('.')">.</button>
+      <button class="btn-orange" onclick="calculate()">=</button>
+    </div>
+  </div>
+
+  <script>
+    const displayElement = document.getElementById('display');
+    let currentInput = "0";
+    let previousInput = "";
+    let operator = null;
+    let shouldResetDisplay = false;
+
+    // 更新螢幕顯示 (包含字體大小自動縮放)
+    function updateDisplay() {
+      if (currentInput.length > 9) {
+        displayElement.style.fontSize = "45px";
+      } else if (currentInput.length > 6) {
+        displayElement.style.fontSize = "60px";
+      } else {
+        displayElement.style.fontSize = "80px";
+      }
+      displayElement.innerText = currentInput;
+    }
+
+    // 處理數字與小數點輸入
+    function appendNumber(number) {
+      if (currentInput === "Error") return;
+
+      if (number === '.') {
+        if (shouldResetDisplay) {
+          currentInput = "0.";
+          shouldResetDisplay = false;
+        } else if (!currentInput.includes('.')) {
+          currentInput += '.';
+        }
+      } else {
+        if (currentInput === "0" || shouldResetDisplay) {
+          currentInput = number;
+          shouldResetDisplay = false;
+        } else {
+          if (currentInput.length < 12) {
+            currentInput += number;
+          }
+        }
+      }
+      updateDisplay();
+    }
+
+    // 處理功能鍵 (AC, %, +/-)
+    function handleAction(action) {
+      if (currentInput === "Error" && action !== 'AC') return;
+
+      if (action === 'AC') {
+        currentInput = "0";
+        previousInput = "";
+        operator = null;
+        shouldResetDisplay = false;
+      } else if (action === '+/-') {
+        if (currentInput !== "0") {
+          currentInput = currentInput.startsWith('-') ? currentInput.substring(1) : '-' + currentInput;
+        }
+      } else if (action === '%') {
+        currentInput = (parseFloat(currentInput) / 100).toString();
+        // 解決浮點數誤差
+        currentInput = parseFloat(Number(currentInput).toPrecision(10)).toString(); 
+      }
+      updateDisplay();
+    }
+
+    // 退匣鍵 (Backspace)
+    function handleBackspace() {
+      if (shouldResetDisplay || currentInput === "Error") return;
+      
+      if (currentInput.length > 1) {
+        currentInput = currentInput.substring(0, currentInput.length - 1);
+        if (currentInput === "-") currentInput = "0";
+      } else {
+        currentInput = "0";
+      }
+      updateDisplay();
+    }
+
+    // 設定運算子 (+, -, *, /)
+    function setOperator(op) {
+      if (currentInput === "Error") return;
+
+      if (operator !== null && !shouldResetDisplay) {
+        calculate();
+      }
+      previousInput = currentInput;
+      operator = op;
+      shouldResetDisplay = true;
+    }
+
+    // 執行計算 (=)
+    function calculate() {
+      if (operator === null || shouldResetDisplay || currentInput === "Error") return;
+
+      let a = parseFloat(previousInput);
+      let b = parseFloat(currentInput);
+      let result = 0;
+
+      switch (operator) {
+        case '+': result = a + b; break;
+        case '−': result = a - b; break;
+        case '×': result = a * b; break;
+        case '÷':
+          if (b === 0) {
+            currentInput = "Error";
+            operator = null;
+            shouldResetDisplay = true;
+            updateDisplay();
+            return;
+          }
+          result = a / b; 
+          break;
+      }
+
+      // 解決 JavaScript 浮點數運算誤差 (例如 0.1 + 0.2)
+      currentInput = parseFloat(result.toPrecision(10)).toString();
+      operator = null;
+      shouldResetDisplay = true;
+      updateDisplay();
+    }
+  </script>
+</body>
+</html>s
